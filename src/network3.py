@@ -42,7 +42,7 @@ import theano.tensor as T
 from theano.tensor.nnet import conv
 from theano.tensor.nnet import softmax
 from theano.tensor import shared_randomstreams
-from theano.tensor.signal import downsample
+from theano.tensor.signal import pool
 
 # Activation functions for neurons
 def linear(z): return z
@@ -50,6 +50,7 @@ def ReLU(z): return T.maximum(0.0, z)
 from theano.tensor.nnet import sigmoid
 from theano.tensor import tanh
 
+import os
 
 #### Constants
 GPU = True
@@ -64,7 +65,7 @@ else:
         "network3.py to set\nthe GPU flag to True."
 
 #### Load the MNIST data
-def load_data_shared(filename="../data/mnist.pkl.gz"):
+def load_data_shared(filename=os.path.join(os.path.dirname(__file__), "../data/mnist.pkl.gz")):
     f = gzip.open(filename, 'rb')
     training_data, validation_data, test_data = cPickle.load(f)
     f.close()
@@ -230,7 +231,7 @@ class ConvPoolLayer(object):
         conv_out = conv.conv2d(
             input=self.inpt, filters=self.w, filter_shape=self.filter_shape,
             image_shape=self.image_shape)
-        pooled_out = downsample.max_pool_2d(
+        pooled_out = pool.pool_2d(
             input=conv_out, ds=self.poolsize, ignore_border=True)
         self.output = self.activation_fn(
             pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))

@@ -16,8 +16,9 @@ import gzip
 # Third-party libraries
 import numpy as np
 
+import os
 
-def load_data(filename="../data/mnist.pkl.gz"):
+def load_data(filename):
     """Return the MNIST data as a tuple containing the training data,
     the validation data, and the test data.
 
@@ -45,7 +46,7 @@ def load_data(filename="../data/mnist.pkl.gz"):
     f.close()
     return (training_data, validation_data, test_data)
 
-def load_data_wrapper(filename="../data/mnist.pkl.gz"):
+def load_data_wrapper(filename=os.path.join(os.path.dirname(__file__), "../data/mnist.pkl.gz")):
     """Return a tuple containing ``(training_data, validation_data,
     test_data)``. Based on ``load_data``, but the format is more
     convenient for use in our implementation of neural networks.
