@@ -10,4 +10,4 @@ mini_batch_size = 10
 net = Network([
     FullyConnectedLayer(n_in=784, n_out=10),
     SoftmaxLayer(n_in=10, n_out=10)], mini_batch_size, "/input/mnist.pkl.gz")
-net.SGD(1, mini_batch_size, 0.1)
+net.SGD(30, mini_batch_size, 0.1)

@@ -75,8 +75,21 @@ class IndexedData(object):
     #### Load the MNIST data
     def load_data_shared(self, filename):
         f = gzip.open(filename, 'rb')
-        training_data, validation_data, test_data = cPickle.load(f)
+        self.raw_training_data, self.raw_validation_data, self.raw_test_data = cPickle.load(f)
         f.close()
+
+        def generate_random_data():
+            """Return a random_data which is a list containing 5,000 2-tuples
+            ``(x, y)``, ``x`` is a 784-dimensional numpy.ndarray containing the
+            random generated pixel image. ``y`` is a 10-dimensional numpy.ndarray
+            representing the zero vector which is the correct answer for ``x``
+            """
+            random_inputs = np.asarray([np.random.rand(784) for i in range(0, 5000)])
+            falses = np.asarray([-1 for i in range(0, 5000)])
+            random_data = (random_inputs, falses)
+            return random_data
+
+        self.random_data = generate_random_data()
 
         def shared(data):
             """Place the data into shared variables.  This allows Theano to copy
@@ -89,7 +102,10 @@ class IndexedData(object):
                 np.asarray(data[1], dtype=theano.config.floatX), borrow=True)
             return shared_x, T.cast(shared_y, "int32")
 
-        return [shared(training_data), shared(validation_data), shared(test_data)]
+        return [shared(
+            (np.append(self.raw_training_data[0], self.random_data[0], axis=0),
+             np.append(self.raw_training_data[1], self.random_data[1], axis=0)) ),
+            shared(self.raw_validation_data), shared(self.raw_test_data)]
 
 #### Main class used to construct and train networks
 class Network(object):
