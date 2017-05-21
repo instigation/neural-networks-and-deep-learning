@@ -64,27 +64,36 @@ else:
     print "Running with a CPU.  If this is not desired, then the modify "+\
         "network3.py to set\nthe GPU flag to True."
 
-#### Load the MNIST data
-def load_data_shared(filename=os.path.join(os.path.dirname(__file__), "../data/mnist.pkl.gz")):
-    f = gzip.open(filename, 'rb')
-    training_data, validation_data, test_data = cPickle.load(f)
-    f.close()
-    def shared(data):
-        """Place the data into shared variables.  This allows Theano to copy
-        the data to the GPU, if one is available.
+class IndexedData(object):
 
-        """
-        shared_x = theano.shared(
-            np.asarray(data[0], dtype=theano.config.floatX), borrow=True)
-        shared_y = theano.shared(
-            np.asarray(data[1], dtype=theano.config.floatX), borrow=True)
-        return shared_x, T.cast(shared_y, "int32")
-    return [shared(training_data), shared(validation_data), shared(test_data)]
+    def __init__(self, filepath):
+        self.x = T.matrix("x")
+        self.y = T.ivector("y")
+        self.training_data, self.validation_data, self.test_data = self.load_data_shared(filepath)
+
+    #### Load the MNIST data
+    def load_data_shared(self, filename):
+        f = gzip.open(filename, 'rb')
+        training_data, validation_data, test_data = cPickle.load(f)
+        f.close()
+
+        def shared(data):
+            """Place the data into shared variables.  This allows Theano to copy
+            the data to the GPU, if one is available.
+
+            """
+            shared_x = theano.shared(
+                np.asarray(data[0], dtype=theano.config.floatX), borrow=True)
+            shared_y = theano.shared(
+                np.asarray(data[1], dtype=theano.config.floatX), borrow=True)
+            return shared_x, T.cast(shared_y, "int32")
+
+        return [shared(training_data), shared(validation_data), shared(test_data)]
 
 #### Main class used to construct and train networks
 class Network(object):
 
-    def __init__(self, layers, mini_batch_size):
+    def __init__(self, layers, mini_batch_size, filepath=os.path.join(os.path.dirname(__file__), "../data/mnist.pkl.gz")):
         """Takes a list of `layers`, describing the network architecture, and
         a value for the `mini_batch_size` to be used during training
         by stochastic gradient descent.
@@ -92,11 +101,10 @@ class Network(object):
         """
         self.layers = layers
         self.mini_batch_size = mini_batch_size
+        self.data = IndexedData(filepath)
         self.params = [param for layer in self.layers for param in layer.params]
-        self.x = T.matrix("x")
-        self.y = T.ivector("y")
         init_layer = self.layers[0]
-        init_layer.set_inpt(self.x, self.x, self.mini_batch_size)
+        init_layer.set_inpt(self.data.x, self.data.x, self.mini_batch_size)
         for j in xrange(1, len(self.layers)):
             prev_layer, layer  = self.layers[j-1], self.layers[j]
             layer.set_inpt(
@@ -104,17 +112,16 @@ class Network(object):
         self.output = self.layers[-1].output
         self.output_dropout = self.layers[-1].output_dropout
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
-            validation_data, test_data, lmbda=0.0):
+    def SGD(self, epochs, mini_batch_size, eta, lmbda=0.0):
         """Train the network using mini-batch stochastic gradient descent."""
-        training_x, training_y = training_data
-        validation_x, validation_y = validation_data
-        test_x, test_y = test_data
+        training_x, training_y = self.data.training_data
+        validation_x, validation_y = self.data.validation_data
+        test_x, test_y = self.data.test_data
 
         # compute number of minibatches for training, validation and testing
-        num_training_batches = size(training_data)/mini_batch_size
-        num_validation_batches = size(validation_data)/mini_batch_size
-        num_test_batches = size(test_data)/mini_batch_size
+        num_training_batches = size(self.data.training_data)/mini_batch_size
+        num_validation_batches = size(self.data.validation_data)/mini_batch_size
+        num_test_batches = size(self.data.test_data)/mini_batch_size
 
         # define the (regularized) cost function, symbolic gradients, and updates
         l2_norm_squared = sum([(layer.w**2).sum() for layer in self.layers])
@@ -174,7 +181,7 @@ class Network(object):
                         print("This is the best validation accuracy to date.")
                         best_validation_accuracy = validation_accuracy
                         best_iteration = iteration
-                        if test_data:
+                        if self.data.test_data:
                             test_accuracy = np.mean(
                                 [test_mb_accuracy(j) for j in xrange(num_test_batches)])
                             print('The corresponding test accuracy is {0:.2%}'.format(
@@ -296,7 +303,7 @@ class SoftmaxLayer(object):
 
     def cost(self, net):
         "Return the log-likelihood cost."
-        return -T.mean(T.log(self.output_dropout)[T.arange(net.y.shape[0]), net.y])
+        return -T.sum(T.log(self.output_dropout) * net.y) / net.mini_batch_size
 
     def accuracy(self, y):
         "Return the accuracy for the mini-batch."
