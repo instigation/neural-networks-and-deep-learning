@@ -1,1 +1,1 @@
-{"family_id": "gBytGP8WqpaccW3bbjXSW8", "module_predecessor": null, "version": 1, "experiment_predecessor": null, "name": "mnist-research"}
+{"module_predecessor": "VEc4VPfbQCZAk7Rd4DvGAC", "family_id": "gBytGP8WqpaccW3bbjXSW8", "name": "mnist-research", "version": 6, "experiment_predecessor": "EFyanHpboWwAbrEU9L2ZdC"}
