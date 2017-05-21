@@ -29,4 +29,7 @@ net = Network([
 rightCost = calcCost(logLikelihoodCost(net.layers[-1], net), net)
 print(rightCost)
 
+newCost = calcCost(net.layers[-1].cost(net), net)
+print(newCost)
+
 

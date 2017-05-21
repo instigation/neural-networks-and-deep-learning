@@ -49,6 +49,7 @@ def linear(z): return z
 def ReLU(z): return T.maximum(0.0, z)
 from theano.tensor.nnet import sigmoid
 from theano.tensor import tanh
+from theano.ifelse import ifelse
 
 import os
 
@@ -303,7 +304,8 @@ class SoftmaxLayer(object):
 
     def cost(self, net):
         "Return the log-likelihood cost."
-        return -T.mean(T.log(self.output_dropout)[T.arange(net.data.y.shape[0]), net.data.y])
+        results, updates = theano.scan(lambda elem: theano.scan(lambda x: ifelse(T.eq(x, elem), 1, 0), sequences=T.arange(10)), sequences=net.data.y)
+        return -T.sum(T.log(self.output_dropout) * results) / net.mini_batch_size
 
     def accuracy(self, y):
         "Return the accuracy for the mini-batch."
