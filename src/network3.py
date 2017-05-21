@@ -137,31 +137,31 @@ class Network(object):
         train_mb = theano.function(
             [i], cost, updates=updates,
             givens={
-                self.x:
+                self.data.x:
                 training_x[i*self.mini_batch_size: (i+1)*self.mini_batch_size],
-                self.y:
+                self.data.y:
                 training_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
         validate_mb_accuracy = theano.function(
-            [i], self.layers[-1].accuracy(self.y),
+            [i], self.layers[-1].accuracy(self.data.y),
             givens={
-                self.x:
+                self.data.x:
                 validation_x[i*self.mini_batch_size: (i+1)*self.mini_batch_size],
-                self.y:
+                self.data.y:
                 validation_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
         test_mb_accuracy = theano.function(
-            [i], self.layers[-1].accuracy(self.y),
+            [i], self.layers[-1].accuracy(self.data.y),
             givens={
-                self.x:
+                self.data.x:
                 test_x[i*self.mini_batch_size: (i+1)*self.mini_batch_size],
-                self.y:
+                self.data.y:
                 test_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
         self.test_mb_predictions = theano.function(
             [i], self.layers[-1].y_out,
             givens={
-                self.x:
+                self.data.x:
                 test_x[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
         # Do the actual training
@@ -303,7 +303,7 @@ class SoftmaxLayer(object):
 
     def cost(self, net):
         "Return the log-likelihood cost."
-        return -T.sum(T.log(self.output_dropout) * net.y) / net.mini_batch_size
+        return -T.mean(T.log(self.output_dropout)[T.arange(net.data.y.shape[0]), net.data.y])
 
     def accuracy(self, y):
         "Return the accuracy for the mini-batch."
