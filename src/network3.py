@@ -320,7 +320,15 @@ class SoftmaxLayer(object):
 
     def cost(self, net):
         "Return the log-likelihood cost."
-        results, updates = theano.scan(lambda elem: theano.scan(lambda x: ifelse(T.eq(x, elem), 1, 0), sequences=T.arange(10)), sequences=net.data.y)
+        results, updates = theano.scan(
+            lambda elem: ifelse(
+                T.eq(elem, -1),
+                T.cast(T.constant([1 for i in range(10)]), dtype="int8"),
+                theano.scan(
+                    lambda x: ifelse(T.eq(x, elem), 1, 0),
+                    sequences=T.arange(10))[0]
+            ),
+            sequences=net.data.y)
         return -T.sum(T.log(self.output_dropout) * results) / net.mini_batch_size
 
     def accuracy(self, y):
